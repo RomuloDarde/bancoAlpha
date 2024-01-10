@@ -18,7 +18,7 @@ public class OperacoesContaGui extends JFrame{
     private JButton buttonConsultarSaldo;
     private JButton buttonTransferir;
     private JTextField textValorTransf;
-    private JLabel labelSaldo;
+    private JLabel labelAvisoSaldo;
     private JLabel labelAvisoTransf;
     private JButton buttonDepositar;
     private JTextField textContaTransf;
@@ -41,6 +41,8 @@ public class OperacoesContaGui extends JFrame{
     private JLabel labelAvisoLogIn;
     private JPanel mainPanel;
     private JLabel labelBemVindo;
+    private JButton buttonLogOut;
+    private JLabel labelAvisoLogOut;
     private boolean logInAtivo;
     private Long numeroContaOp;
 
@@ -62,14 +64,9 @@ public class OperacoesContaGui extends JFrame{
         buttonLogIn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                labelAvisoDep.setText(" ");
-                labelAvisoPag.setText(" ");
-                labelAvisoTransf.setText(" ");
-                labelSaldo.setText(" ");
-                Long numeroConta = Long.parseLong(textFieldNumeroConta.getText());
-                String senha = textFieldSenha.getText();
-
                 try {
+                    Long numeroConta = Long.parseLong(textFieldNumeroConta.getText());
+                    String senha = textFieldSenha.getText();
                     Conta conta = clientDAO.listarContasPorNumero(numeroConta);
 
                     if (!conta.getSenha().equals(senha)) {
@@ -77,26 +74,45 @@ public class OperacoesContaGui extends JFrame{
                     } else {
                         logInAtivo = true;
                         numeroContaOp = numeroConta;
-                        labelAvisoLogIn.setText("Login efetuado com sucesso!.");
-                        labelBemVindo.setText("Bem vindo, " + conta.getRazaoSocial() + "!");
+                        limparTodosCampos();
+                        mensagemLoginAtivo(conta);
+                        textFieldNumeroConta.setText(Long.toString(numeroConta));
                     }
 
                 } catch (HttpClientErrorException exception) {
+                    labelAvisoLogIn.setText("Número de Conta Inválido.");
+                } catch (NumberFormatException exception) {
                     labelAvisoLogIn.setText("Número de Conta Inválido.");
                 }
             }
         });
 
+
+        //Botão Log Out
+        buttonLogOut.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logInAtivo = false;
+                limparTodosCampos();
+                labelAvisoLogOut.setText("Logout efetuado com sucesso.");
+                Long numeroConta = 0L;
+                String senha = ("");
+            }
+        });
+
+
         //Botão Consultar Saldo
         buttonConsultarSaldo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                labelAvisoDep.setText(" ");
-                labelAvisoPag.setText(" ");
-                labelAvisoTransf.setText(" ");
+                limparCamposAviso();
+                limparCampoDeposito();
+                limparCamposPagamento();
+                limparCamposTransferencia();
+
                 if (logInAtivo) {
-                    labelSaldo.setText(clientDAO.consultarSaldo(numeroContaOp));
-                } else labelSaldo.setText("Login não efetuado.");
+                    labelAvisoSaldo.setText(clientDAO.consultarSaldo(numeroContaOp));
+                } else labelAvisoSaldo.setText("Login não efetuado.");
             }
         });
 
@@ -104,17 +120,21 @@ public class OperacoesContaGui extends JFrame{
         buttonDepositar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                labelAvisoPag.setText(" ");
-                labelAvisoTransf.setText(" ");
-                labelSaldo.setText(" ");
+                limparCamposAviso();
+                limparCamposPagamento();
+                limparCamposTransferencia();
+
                 if (logInAtivo) {
                     try {
-                        Double valor = Double.parseDouble(textValorDep.getText());
+                        Double valor = Double.parseDouble(textValorDep.getText()
+                                .replace(',', '.'));
                         clientDAO.depositar(numeroContaOp, valor);
                         labelAvisoDep.setText("Depósito efetuado com sucesso");
 
                     } catch (ValorIncorretoException exception) {
                         labelAvisoDep.setText("Valor deve ser maior que 0.");
+                    } catch (NumberFormatException exception) {
+                        labelAvisoDep.setText("Valor não deve conter caracteres.");
                     }
                 } else labelAvisoDep.setText("Login não efetuado.");
             }
@@ -124,22 +144,32 @@ public class OperacoesContaGui extends JFrame{
         buttonPagar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                labelAvisoDep.setText(" ");
-                labelAvisoTransf.setText(" ");
-                labelSaldo.setText(" ");
+                limparCamposAviso();
+                limparCampoDeposito();
+                limparCamposTransferencia();
+
                 if (logInAtivo) {
                     try {
-                        Double valor = Double.parseDouble(textValorPag.getText());
-                        Long codigoDeBarras = Long.parseLong(textCodBarrasPag.getText());
+                        Double valor = Double.parseDouble(textValorPag.getText()
+                                .replace(',', '.'));
 
-                        clientDAO.pagar(numeroContaOp, codigoDeBarras, valor);
-                        labelAvisoPag.setText("Pagamento efetuado com sucesso");
+                        try {
+                            Long codigoDeBarras = Long.parseLong(textCodBarrasPag.getText());
+                            clientDAO.pagar(numeroContaOp, codigoDeBarras, valor);
+                            labelAvisoPag.setText("Pagamento efetuado com sucesso");
+
+                        } catch (NumberFormatException exception) {
+                            labelAvisoPag.setText("Código de barras incorreto (somente números).");
+                        }
 
                     } catch (ValorIncorretoException exception) {
                         labelAvisoPag.setText("Valor deve ser maior que 0.");
                     } catch (SaldoInsuficienteException exception) {
                         labelAvisoPag.setText("Saldo insuficiente.");
+                    } catch (NumberFormatException exception) {
+                    labelAvisoPag.setText("Valor não deve conter caracteres.");
                     }
+
                 } else labelAvisoPag.setText("Login não efetuado.");
             }
         });
@@ -148,12 +178,14 @@ public class OperacoesContaGui extends JFrame{
         buttonTransferir.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                labelAvisoDep.setText(" ");
-                labelAvisoPag.setText(" ");
-                labelSaldo.setText(" ");
+                limparCamposAviso();
+                limparCampoDeposito();
+                limparCamposPagamento();
+
                 if (logInAtivo) {
                     try {
-                        Double valor = Double.parseDouble(textValorTransf.getText());
+                        Double valor = Double.parseDouble(textValorTransf.getText()
+                                .replace(',', '.'));
                         Long numeroContaDestino = Long.parseLong(textContaTransf.getText());
 
                         clientDAO.transferir(numeroContaOp, numeroContaDestino, valor);
@@ -166,10 +198,55 @@ public class OperacoesContaGui extends JFrame{
                         labelAvisoTransf.setText("Valor deve ser maior que 0.");
                     } catch (SaldoInsuficienteException exception) {
                         labelAvisoTransf.setText("Saldo insuficiente.");
+                    } catch (NumberFormatException exception) {
+                    labelAvisoTransf.setText("Valor não deve conter caracteres.");
                     }
+
                 } else labelAvisoTransf.setText("Login não efetuado.");
             }
         });
+    }
+
+    private void limparTodosCampos() {
+        textFieldNumeroConta.setText("");
+        textFieldSenha.setText("");
+        textValorDep.setText("");
+        textContaTransf.setText("");
+        textValorTransf.setText("");
+        textCodBarrasPag.setText("");
+        textValorPag.setText("");
+        labelAvisoLogOut.setText("");
+        labelBemVindo.setText("");
+        labelAvisoLogIn.setText("");
+        labelAvisoDep.setText("");
+        labelAvisoPag.setText("");
+        labelAvisoTransf.setText("");
+        labelAvisoSaldo.setText("");
+    }
+
+    private void limparCamposAviso() {
+        labelAvisoDep.setText("");
+        labelAvisoPag.setText("");
+        labelAvisoTransf.setText("");
+        labelAvisoSaldo.setText("");
+    }
+
+    private void limparCampoDeposito() {
+        textValorDep.setText("");
+    }
+
+    private void limparCamposPagamento() {
+        textCodBarrasPag.setText("");
+        textValorPag.setText("");
+    }
+
+    private void limparCamposTransferencia() {
+        textContaTransf.setText("");
+        textValorTransf.setText("");
+    }
+    public void mensagemLoginAtivo (Conta conta) {
+        labelAvisoLogIn.setText("Login efetuado com sucesso!.");
+        labelBemVindo.setText("Bem vindo, " + conta.getRazaoSocial() + "!");
     }
 
     public static void main(String[] args) {

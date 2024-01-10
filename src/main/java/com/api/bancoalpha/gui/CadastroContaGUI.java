@@ -41,6 +41,7 @@ public class CadastroContaGUI extends JFrame{
     private JTextField textEstado;
     private JButton buttonConsultaCep;
     private JButton buttonConsultaCnpj;
+    private JButton buttonLimparDados;
 
     public CadastroContaGUI() {
         //Configurações
@@ -59,7 +60,7 @@ public class CadastroContaGUI extends JFrame{
                 !textEmail.getText().isEmpty() && !textLogradouro.getText().isEmpty() &&
                 !textNumeroEndereco.getText().isEmpty() && !textBairro.getText().isEmpty() &&
                 !textCidade.getText().isEmpty() && !textEstado.getText().isEmpty() &&
-                !textSenha.getText().isEmpty()) {
+                !textSenha.getText().isEmpty() && !textCep.getText().isEmpty()) {
 
                     String cnpj = textCnpj.getText();
                     String titular = textRazaoSocial.getText();
@@ -134,6 +135,26 @@ public class CadastroContaGUI extends JFrame{
                     labelMensagem.setText("CNPJ incorreto!");
                 }
 
+            }
+        });
+
+        //Botão Limpar Dados
+        buttonLimparDados.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                textCnpj.setText("");
+                textRazaoSocial.setText("");
+                textEmail.setText("");
+                textCep.setText("");
+                textLogradouro.setText("");
+                textNumeroEndereco.setText("");
+                textComplementoEndereco.setText("");
+                textBairro.setText("");
+                textCidade.setText("");
+                textEstado.setText("");
+                textSenha.setText("");
+                labelMensagem.setText("");
+                labelAviso.setText("");
             }
         });
     }
